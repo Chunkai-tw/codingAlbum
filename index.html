@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>科丁的相簿</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Lucide Icons for aesthetic buttons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light background */
+        }
+        /* Custom scrollbar for aesthetics */
+        .scene-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .scene-container::-webkit-scrollbar-thumb {
+            background-color: #6366f1;
+            border-radius: 4px;
+        }
+        .scene-container::-webkit-scrollbar-track {
+            background-color: #e0e7ff;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-start justify-center p-4">
+    <div id="app" class="w-full max-w-4xl bg-white shadow-2xl rounded-xl p-6 md:p-10 mt-8">
+        <h1 class="text-4xl font-bold text-indigo-700 text-center mb-6">📸 科丁的相簿</h1>
+
+        <!-- 1. 主選單 (Menu View) -->
+        <div id="menuView" class="view">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-center">步驟 1：請選擇年級</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <button onclick="startGradeFlow('1-3')" class="flex flex-col items-center justify-center p-8 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xl rounded-xl shadow-lg transition duration-300 transform hover:scale-[1.02]">
+                    <i data-lucide="graduation-cap" class="w-10 h-10 mb-2"></i>
+                    一二三年級
+                </button>
+                <button onclick="startGradeFlow('4-6')" class="flex flex-col items-center justify-center p-8 bg-purple-500 hover:bg-purple-600 text-white font-bold text-xl rounded-xl shadow-lg transition duration-300 transform hover:scale-[1.02]">
+                    <i data-lucide="book-open-text" class="w-10 h-10 mb-2"></i>
+                    四五六年級 (通關密碼模式)
+                </button>
+            </div>
+            <p class="mt-6 text-center text-sm text-gray-500">※ 四五六年級需通過密碼驗證才可啟動相機。</p>
+        </div>
+
+        <!-- 2A. 場景選擇 (Scene Selection View) - 適用於一二三年級 -->
+        <div id="sceneSelectionView" class="view hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-center">步驟 2：選擇一個場景 (一二三年級)</h2>
+            <div id="scenesContainer" class="scene-container flex overflow-x-auto space-x-4 p-4 rounded-xl bg-gray-50 shadow-inner">
+                <!-- Scenes will be loaded here -->
+            </div>
+            <div class="flex justify-center mt-6">
+                <button onclick="showView('menuView')" class="flex items-center space-x-2 px-6 py-2 bg-gray-200 text-gray-700 font-semibold rounded-full hover:bg-gray-300 transition duration-200">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    <span>返回選單</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 2B. 校園問答一 (Quiz 1: Scene View) - 適用於四五六年級 -->
+        <div id="quizSceneView" class="view hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-center">步驟 2A：校園問答</h2>
+            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                <p class="text-xl font-bold text-indigo-600 mb-4">題目：你最喜歡校園的哪一個場景？</p>
+                <div id="quizSceneOptionsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Options will be rendered here by JavaScript -->
+                </div>
+            </div>
+            <div class="flex justify-center mt-6">
+                <button onclick="showView('menuView')" class="flex items-center space-x-2 px-6 py-2 bg-gray-200 text-gray-700 font-semibold rounded-full hover:bg-gray-300 transition duration-200">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    <span>返回選單</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 2C. 記憶提示畫面一 (Memory 1: Scene Digit) -->
+        <div id="memorySceneView" class="view hidden">
+            <div class="flex flex-col items-center justify-center p-8 bg-pink-100 rounded-xl shadow-2xl border-4 border-pink-500">
+                <h2 class="text-3xl font-bold text-pink-700 mb-6 text-center">🧠 記憶提示：第一個數字</h2>
+                <p class="text-xl text-gray-700 mb-8 text-center">請務必**記住**您選擇的選項數字。</p>
+                <div id="memorySceneNumberContainer" class="p-8 bg-pink-500 text-white font-black text-9xl rounded-2xl shadow-xl animate-pulse">
+                    <!-- The number will be displayed here -->
+                </div>
+                <p class="mt-8 text-2xl font-semibold text-pink-900 text-center">這是通關密碼的第一個數字！</p>
+            </div>
+            <div class="flex justify-center mt-6">
+                <button onclick="showQuizStyleView()" class="flex items-center space-x-2 px-8 py-3 bg-pink-600 text-white font-bold text-lg rounded-full shadow-lg hover:bg-pink-700 transition duration-200">
+                    <i data-lucide="arrow-right" class="w-6 h-6"></i>
+                    <span>進入下一步：問答二 (風格)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 3A. 風格選擇 (Style Selection View) - 適用於一二三年級 -->
+        <div id="styleSelectionView" class="view hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-center">步驟 3：選擇繪圖風格 (一二三年級)</h2>
+            <div id="stylesContainer" class="flex flex-wrap justify-center gap-4 p-4 rounded-xl bg-gray-50 shadow-inner">
+                <!-- Styles will be loaded here by JavaScript -->
+            </div>
+            <div class="flex justify-center space-x-4 mt-6">
+                <button onclick="startGradeFlow(window.currentGrade)" class="flex items-center space-x-2 px-6 py-2 bg-gray-200 text-gray-700 font-semibold rounded-full hover:bg-gray-300 transition duration-200">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    <span>返回上一步</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 3B. 校園問答二 (Quiz 2: Style View) - 適用於四五六年級 -->
+        <div id="quizStyleView" class="view hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-center">步驟 2B：校園問答</h2>
+            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                <p class="text-xl font-bold text-indigo-600 mb-4">題目：你想嘗試的合成風格？</p>
+                <div id="quizStyleOptionsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Options will be rendered here by JavaScript -->
+                </div>
+            </div>
+            <div class="flex justify-center mt-6">
+                <button onclick="showQuizSceneView()" class="flex items-center space-x-2 px-6 py-2 bg-gray-200 text-gray-700 font-semibold rounded-full hover:bg-gray-300 transition duration-200">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    <span>返回問答一</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 3C. 記憶提示畫面二 (Memory 2: Style Digit) -->
+        <div id="memoryStyleView" class="view hidden">
+            <div class="flex flex-col items-center justify-center p-8 bg-green-100 rounded-xl shadow-2xl border-4 border-green-500">
+                <h2 class="text-3xl font-bold text-green-700 mb-6 text-center">🧠 記憶提示：第二個數字</h2>
+                <p class="text-xl text-gray-700 mb-8 text-center">請務必**記住**您選擇的選項數字。</p>
+                <div id="memoryStyleNumberContainer" class="p-8 bg-green-500 text-white font-black text-9xl rounded-2xl shadow-xl animate-pulse">
+                    <!-- The number will be displayed here -->
+                </div>
+                <p class="mt-8 text-2xl font-semibold text-green-900 text-center">這是通關密碼的第二個數字！</p>
+            </div>
+            <div class="flex justify-center mt-6">
+                <button onclick="showQuizAnniversaryView()" class="flex items-center space-x-2 px-8 py-3 bg-green-600 text-white font-bold text-lg rounded-full shadow-lg hover:bg-green-700 transition duration-200">
+                    <i data-lucide="arrow-right" class="w-6 h-6"></i>
+                    <span>進入下一步：問答三 (校慶)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 4. 校慶問答三 (Quiz 3: Anniversary View) - 適用於四五六年級 -->
+        <div id="quizAnniversaryView" class="view hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-center">步驟 2C：校園問答</h2>
+            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 flex flex-col items-center">
+                <p class="text-xl font-bold text-indigo-600 mb-4 text-center">題目：請問今年是大成國小創校第幾週年校慶？</p>
+                <!-- 根據使用者要求修改提示詞 -->
+                <p class="text-3xl font-black text-red-500 mb-6">請務必記住第三組密碼</p>
+                <!-- 移除其他提示文字 -->
+                
+                <!-- 根據使用者要求修改按鈕文字 -->
+                <button onclick="showPasswordView()" class="mt-8 flex items-center space-x-2 px-8 py-3 bg-indigo-600 text-white font-bold text-lg rounded-full shadow-lg hover:bg-indigo-700 transition duration-200">
+                    <i data-lucide="lock-keyhole" class="w-6 h-6"></i>
+                    <span>我知道了，下一步</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 5. 密碼輸入 (Password View) - 適用於四五六年級 -->
+        <div id="passwordView" class="view hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-center">步驟 3：輸入通關密碼 (四位數)</h2>
+            <div class="bg-yellow-50 p-6 rounded-xl shadow-lg border-4 border-yellow-300 flex flex-col items-center max-w-sm mx-auto">
+                <!-- 根據使用者要求修改提示詞 -->
+                <p class="text-base font-medium text-yellow-800 mb-4 text-center">
+                    請將三組數字，視為字串組合起來就是通關密碼(提示：總共4碼數字)
+                </p>
+                <!-- 移除格式提示 -->
+
+                <input type="number" id="passwordInput" placeholder="請輸入 4 位數密碼"
+                       maxlength="4" oninput="if(this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);"
+                       class="w-full text-center text-4xl font-mono px-4 py-3 border-4 border-indigo-400 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-inner">
+
+                <p id="passwordError" class="mt-3 text-red-600 font-semibold hidden">密碼錯誤，請再試一次！</p>
+
+                <button onclick="checkPassword()" class="w-full mt-6 flex items-center justify-center space-x-2 px-8 py-3 bg-green-600 text-white font-bold text-lg rounded-full shadow-lg hover:bg-green-700 transition duration-200">
+                    <i data-lucide="unlock" class="w-6 h-6"></i>
+                    <span>驗證密碼並啟動相機</span>
+                </button>
+            </div>
+            <div class="flex justify-center mt-6">
+                <button onclick="showQuizAnniversaryView()" class="flex items-center space-x-2 px-6 py-2 bg-gray-200 text-gray-700 font-semibold rounded-full hover:bg-gray-300 transition duration-200">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    <span>返回問答三</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 6. 相機拍攝 (Camera View) -->
+        <div id="cameraView" class="view hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-center">步驟 4：啟動相機並拍攝</h2>
+            <div class="relative w-full aspect-video bg-gray-800 rounded-xl overflow-hidden shadow-lg mb-6">
+                <video id="webcamVideo" class="w-full h-full object-cover" autoplay playsinline></video>
+                <div id="loadingCamera" class="absolute inset-0 flex items-center justify-center bg-gray-900/80 text-white text-lg hidden">
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    正在載入相機...
+                </div>
+            </div>
+            <div class="flex justify-center space-x-4">
+                <button id="captureBtn" onclick="captureAndSynthesize()" class="flex items-center space-x-2 px-8 py-3 bg-red-500 text-white font-bold text-lg rounded-full shadow-lg hover:bg-red-600 transition duration-200 disabled:bg-gray-400" disabled>
+                    <i data-lucide="camera" class="w-6 h-6"></i>
+                    <span>拍照！</span>
+                </button>
+                <button onclick="stopCamera(); showView('menuView')" class="flex items-center space-x-2 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-full hover:bg-gray-300 transition duration-200">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                    <span>取消</span>
+                </button>
+            </div>
+            <canvas id="photoCanvas" class="hidden"></canvas>
+        </div>
+
+        <!-- 7. 合成結果 (Result View) -->
+        <div id="resultView" class="view hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6 text-center">步驟 5：合成結果</h2>
+            <div class="flex flex-col items-center">
+                <canvas id="synthesisCanvas" class="w-full max-w-lg aspect-video rounded-xl shadow-2xl border-4 border-indigo-400"></canvas>
+                <div id="loadingSynthesis" class="flex flex-col items-center justify-center mt-4 text-indigo-600 text-lg hidden p-4">
+                    <svg class="animate-spin h-8 w-8 text-indigo-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    正在使用 Nano Banana 進行智慧合成...
+                    <p class="text-sm text-gray-500 mt-1">這可能需要幾秒鐘</p>
+                </div>
+
+                <!-- 新增：電子郵件寄送表單 (僅 1-3 年級顯示) -->
+                <div id="emailFormContainer" class="w-full max-w-sm mt-8 p-6 bg-blue-50 rounded-xl shadow-inner border border-blue-200 hidden">
+                    <p class="text-lg font-semibold text-blue-800 mb-4 text-center">🎉 照片已合成！</p>
+                    <p class="text-sm text-gray-700 mb-3 text-center">請輸入您的帳號，將照片寄到您的信箱並備份至雲端硬碟：</p>
+
+                    <div class="flex">
+                        <input type="text" id="emailAccountInput" placeholder="請輸入帳號 (例如：A12345)"
+                               class="flex-grow px-4 py-2 border border-blue-400 rounded-l-lg focus:ring-blue-500 focus:border-blue-500">
+                        <span class="px-3 py-2 bg-blue-100 border border-blue-400 border-l-0 text-blue-700 font-medium rounded-r-lg">@chc.edu.tw</span>
+                    </div>
+
+                    <button id="sendEmailBtn" onclick="sendEmail()"
+                            class="w-full mt-4 flex items-center justify-center space-x-2 px-6 py-2 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition duration-200 shadow-md disabled:bg-gray-400">
+                        <i data-lucide="mail" class="w-5 h-5"></i>
+                        <span>寄送照片並備份</span>
+                    </button>
+
+                    <p id="emailMessage" class="mt-3 text-center text-sm font-medium hidden"></p>
+                </div>
+                <!-- 結束：電子郵件寄送表單 -->
+
+                <div class="flex justify-center space-x-4 mt-6">
+                    <a id="downloadLink" download="科丁相簿_合成照.png" class="flex items-center space-x-2 px-6 py-2 bg-green-500 text-white font-bold rounded-full hover:bg-green-600 transition duration-200 shadow-md">
+                        <i data-lucide="download" class="w-5 h-5"></i>
+                        <span>下載照片</span>
+                    </a>
+                    <button onclick="showView('menuView')" class="flex items-center space-x-2 px-6 py-2 bg-indigo-500 text-white font-bold rounded-full hover:bg-indigo-600 transition duration-200 shadow-md">
+                        <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                        <span>重新開始</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // ----------------------------------------------------------------------
+        // 1. Firebase Boilerplate (Required but not used for this local app)
+        // ----------------------------------------------------------------------
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase configuration and initialization (MANDATORY BOILERPLATE)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, db, auth;
+        if (firebaseConfig) {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            setLogLevel('Debug');
+
+            // Sign in process
+            if (initialAuthToken) {
+                signInWithCustomToken(auth, initialAuthToken).catch(error => {
+                    console.error("Firebase custom token sign-in failed:", error);
+                    signInAnonymously(auth).catch(err => console.error("Anonymous sign-in failed:", err));
+                });
+            } else {
+                signInAnonymously(auth).catch(error => {
+                    console.error("Firebase anonymous sign-in failed:", error);
+                });
+            }
+        }
+        // End of Firebase Boilerplate
+
+        // ----------------------------------------------------------------------
+        // 【❗ 必填設定 ❗】
+        // 1. 請將此處替換為您部署 GAS Web App 後取得的執行 URL。
+        // 2. 外部託管時，請記得替換 apiKey。
+        // ----------------------------------------------------------------------
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx3guSQnG-9KWexIxck2FiPzEWrEvqcFfaBg_5rS9OzB6MeQpOyDRqCx7nYYpYgy6Or/exec"; 
+
+
+        // ----------------------------------------------------------------------
+        // 2. 應用程式資料與狀態 (App Data and State)
+        // ----------------------------------------------------------------------
+
+        // 所有的場景圖片 URL (與選項數字 1-7 對應) - 已更新
+        const ALL_SCENES_DATA = [
+            { index: 1, name: "IMG_0048.JPG", id: "1GWNJw3E0mSuDXT6Di3WjURi22aaqbtmy", url: "https://lh3.googleusercontent.com/d/1GWNJw3E0mSuDXT6Di3WjURi22aaqbtmy", location_name: "場景一" },
+            { index: 2, name: "IMG_0044.JPG", id: "1xajcbigEnnDgKOiwJIq3mSluBVOYA77b", url: "https://lh3.googleusercontent.com/d/1xajcbigEnnDgKOiwJIq3mSluBVOYA77b", location_name: "場景二" },
+            { index: 3, name: "IMG_0061.JPG", id: "1SNaXlHToWku9GZpmr_KkuLshEe6AVaH5", url: "https://lh3.googleusercontent.com/d/1SNaXlHToWku9GZpmr_KkuLshEe6AVaH5", location_name: "場景三" },
+            { index: 4, name: "IMG_0062.JPG", id: "1sORMgxpPsBl5mvzhfPYHoh6DHxoW7G1C", url: "https://lh3.googleusercontent.com/d/1sORMgxpPsBl5mvzhfPYHoh6DHxoW7G1C", location_name: "場景四" },
+            { index: 5, name: "IMG_0057.JPG", id: "1J9D5ydZfpTN75og8yGWjRtPgd7wuDdcm", url: "https://lh3.googleusercontent.com/d/1J9D5ydZfpTN75og8yGWjRtPgd7wuDdcm", location_name: "場景五" },
+            { index: 6, name: "IMG_0054.JPG", id: "1I9cLp6plVSccUMchyEnLVH8C93mEprzR", url: "https://lh3.googleusercontent.com/d/1I9cLp6plVSccUMchyEnLVH8C93mEprzR", location_name: "場景六" },
+            { index: 7, name: "IMG_0053.JPG", id: "1d_zSKJj_0IHN5x37GSxj3psCBNx_tDi6", url: "https://lh3.googleusercontent.com/d/1d_zSKJj_0IHN5x37GSxj3psCBNx_tDi6", location_name: "場景七" }
+        ];
+
+        // 可選風格及其對應的提示詞修改器 (與選項數字 1-7 對應) - 已更新漫威風格
+        const STYLES = [
+            { index: 1, id: 'none', name: '不合成', prompt: 'a realistic photo without any style modification. Do not apply any filters or cartoon effects to the figure.', sampleUrl: "https://lh3.googleusercontent.com/d/1o4HP5YWSoAH7czhWd3B9EWNfWStB8uQ4" },
+            // ------------------------------------------------------------------
+            // ** 根據使用者要求更新 sampleUrl **
+            { index: 2, id: 'comic', name: '漫威風格', prompt: 'a bold, dynamic superhero comic book style, high contrast, vibrant colors, inspired by Marvel comics.', sampleUrl: "https://lh3.googleusercontent.com/d/1-ZztaacyJUggBzZ7al33BJEzfGng3Xcc" },
+            // ------------------------------------------------------------------
+            { index: 3, id: 'anime', name: '日漫風格', prompt: 'a high-quality Japanese anime style (cartoon) inspired by Studio Ghibli, featuring lush backgrounds and soft color palettes.', sampleUrl: "https://lh3.googleusercontent.com/d/1-ZztaacyJUggBzZ7al33BJEzfGng3Xcc" },
+            { index: 4, id: 'chibi', name: 'Q版卡通', prompt: 'a cute chibi, large-head, small-body cartoon style, full body.', sampleUrl: "https://lh3.googleusercontent.com/d/1yF6D1zz5AQANB-Z7jwj-DCuFmXdr4RHk" },
+            { index: 5, id: 'abstract', name: '抽象派', prompt: 'an abstract painting style in the manner of Picasso (Cubism), expressive colors and forms.', sampleUrl: "https://lh3.googleusercontent.com/d/1Ayh6srtrdyuSQlK4tOrKgODG_edn3vyv" },
+            { index: 6, id: 'popart', name: '普普風', prompt: 'a bold, graphic print in the Pop Art style (Andy Warhol/Roy Lichtenstein), with thick outlines and flat colors.', sampleUrl: "https://lh3.googleusercontent.com/d/1iJEc1fGL3F4jM5V72bRc1MTEbBphy2lr" },
+            { index: 7, id: 'pixel', name: '點陣圖風格', prompt: 'low-resolution 8-bit pixel art style, simplified colors, high contrast, full body shot.', sampleUrl: "https://lh3.googleusercontent.com/d/1p-HL2EYU4mpkb2KF6UWB8rc40f-w82wU" }
+        ];
+
+        // 狀態變數
+        let selectedSceneUrl = null;
+        let selectedStylePrompt = null;
+        let cameraStream = null;
+
+        window.currentGrade = null; // 紀錄當前選擇的年級
+
+        // 4-6 grade password state
+        window.firstDigit = null;  // Digit 1 (Scene 1-7)
+        window.secondDigit = null; // Digit 2 (Style 1-7)
+        const ANNIVERSARY_DIGITS = "22"; // Digits 3 & 4 (校慶週年密碼)
+
+        // ----------------------------------------------------------------------
+        // 3. 畫面切換與導航 (View Switching and Navigation)
+        // ----------------------------------------------------------------------
+
+        /**
+         * 顯示指定的畫面並隱藏其他畫面
+         * @param {string} viewName - 要顯示的畫面 ID
+         */
+        window.showView = (viewName) => {
+            document.querySelectorAll('.view').forEach(view => {
+                view.classList.add('hidden');
+            });
+            document.getElementById(viewName).classList.remove('hidden');
+
+            if (viewName !== 'cameraView' && cameraStream) {
+                window.stopCamera();
+            }
+            // 每次切換畫面時，重新渲染 icon
+            lucide.createIcons();
+        };
+
+        /**
+         * 根據年級啟動對應流程
+         * @param {string} grade - 年級代號 ('1-3' or '4-6')
+         */
+        window.startGradeFlow = (grade) => {
+            window.currentGrade = grade;
+
+            if (grade === '4-6') {
+                showQuizSceneView(); // 進入問答一
+                return;
+            }
+
+            // 1-3 grade logic: Show scene selection
+            showView('sceneSelectionView');
+            const container = document.getElementById('scenesContainer');
+
+            // 1-3 年級使用 ALL_SCENES_DATA 進行選取
+            container.innerHTML = ALL_SCENES_DATA.map((scene, index) => `
+                <div onclick="selectScene('${scene.url}')" id="scene-${index}"
+                     class="scene-item flex-shrink-0 w-36 h-24 md:w-44 md:h-32
+                            bg-gray-200 rounded-lg overflow-hidden cursor-pointer
+                            shadow-md hover:shadow-xl transition duration-300 border-4 border-transparent ${selectedSceneUrl === scene.url ? 'border-indigo-500' : 'hover:border-indigo-500'}">
+                    <!-- 使用更新後的 scene.url 進行顯示 -->
+                    <img src="${scene.url}" 
+                         onerror="this.src='https://placehold.co/176x128/ccc/333?text=場景${scene.index}_載入失敗';"
+                         class="w-full h-full object-cover" alt="${scene.location_name}">
+                    <p class="text-xs text-center p-1 bg-gray-700 text-white truncate">${scene.location_name}</p>
+                </div>
+            `).join('');
+        };
+
+        /**
+         * 顯示校園問答一 (場景選擇) 畫面 (用於 4-6 年級)
+         */
+        function showQuizSceneView() {
+            showView('quizSceneView');
+            const container = document.getElementById('quizSceneOptionsContainer');
+
+            container.innerHTML = ALL_SCENES_DATA.map((scene) => `
+                <button onclick="selectQuizAnswerScene(${scene.index}, '${scene.url}')"
+                        class="quiz-option-btn w-full px-6 py-3 bg-white border border-indigo-400 text-indigo-600
+                               font-semibold text-lg rounded-xl shadow hover:bg-indigo-50 hover:shadow-md
+                               transition duration-200 text-left">
+                    選項 ${scene.index}: ${scene.location_name}
+                </button>
+            `).join('');
+        }
+
+        /**
+         * 處理問答一結果 (場景選擇)，儲存第一個數字
+         */
+        window.selectQuizAnswerScene = (selectedIndex, sceneUrl) => {
+            window.firstDigit = selectedIndex;
+            selectedSceneUrl = sceneUrl;
+            showMemorySceneView(selectedIndex);
+        };
+
+        /**
+         * 顯示記憶提示畫面一 (Memory 1: Scene Digit)
+         */
+        function showMemorySceneView(selectedIndex) {
+            showView('memorySceneView');
+            document.getElementById('memorySceneNumberContainer').textContent = selectedIndex;
+        }
+
+        /**
+         * 顯示校園問答二 (風格選擇) 畫面 (用於 4-6 年級)
+         */
+        window.showQuizStyleView = () => {
+            showView('quizStyleView');
+            const container = document.getElementById('quizStyleOptionsContainer');
+
+            container.innerHTML = STYLES.map((style) => `
+                <button onclick="selectQuizAnswerStyle(${style.index}, '${style.prompt}')"
+                        class="quiz-option-btn w-full px-6 py-3 bg-white border border-purple-400 text-purple-600
+                               font-semibold text-lg rounded-xl shadow hover:bg-purple-50 hover:shadow-md
+                               transition duration-200 text-left">
+                    選項 ${style.index}: ${style.name}
+                </button>
+            `).join('');
+        }
+
+        /**
+         * 處理問答二結果 (風格選擇)，儲存第二個數字
+         */
+        window.selectQuizAnswerStyle = (selectedIndex, stylePrompt) => {
+            window.secondDigit = selectedIndex;
+            selectedStylePrompt = stylePrompt;
+            showMemoryStyleView(selectedIndex);
+        };
+
+        /**
+         * 顯示記憶提示畫面二 (Memory 2: Style Digit)
+         */
+        function showMemoryStyleView(selectedIndex) {
+            showView('memoryStyleView');
+            document.getElementById('memoryStyleNumberContainer').textContent = selectedIndex;
+        }
+
+        /**
+         * 顯示校園問答三 (校慶週年) 畫面 (用於 4-6 年級)
+         */
+        window.showQuizAnniversaryView = () => {
+            showView('quizAnniversaryView');
+        }
+
+        /**
+         * 顯示密碼輸入畫面 (用於 4-6 年級)
+         */
+        window.showPasswordView = () => {
+            showView('passwordView');
+            document.getElementById('passwordError').classList.add('hidden');
+            document.getElementById('passwordInput').value = '';
+        }
+
+        /**
+         * 驗證通關密碼 (用於 4-6 年級)
+         */
+        window.checkPassword = () => {
+            const inputElement = document.getElementById('passwordInput');
+            const errorElement = document.getElementById('passwordError');
+
+            const enteredPassword = inputElement.value.trim();
+            // 組合三組數字：[場景數字] [風格數字] [校慶數字 (22)]
+            const correctPassword = `${window.firstDigit}${window.secondDigit}${ANNIVERSARY_DIGITS}`;
+
+            if (enteredPassword === correctPassword) {
+                // 密碼正確，啟動相機流程
+                errorElement.classList.add('hidden');
+                startCamera();
+                showView('cameraView');
+            } else {
+                // 密碼錯誤
+                errorElement.classList.remove('hidden');
+                console.log(`密碼錯誤！正確密碼應為 ${correctPassword} (請勿告訴使用者)`);
+            }
+        }
+
+        /**
+         * 選擇場景圖片並切換到風格選擇畫面 (僅用於 1-3 年級)
+         * @param {string} url - 選定的場景圖片 URL
+         */
+        window.selectScene = (url) => {
+            selectedSceneUrl = url;
+
+            // 視覺上標記選中的場景
+            document.querySelectorAll('.scene-item').forEach(item => {
+                item.classList.remove('border-indigo-500');
+            });
+            event.currentTarget.classList.add('border-indigo-500');
+
+            // 延遲切換到風格選擇畫面
+            setTimeout(() => {
+                window.loadStyleSelectionForGrade1_3(); // 使用 window. 呼叫
+                showView('styleSelectionView');
+            }, 300);
+        };
+
+        /**
+         * 載入風格選擇畫面 (使用範例圖片) - 僅供 1-3 年級使用
+         */
+        window.loadStyleSelectionForGrade1_3 = () => { // 修正：確保在全域範圍內定義
+            const container = document.getElementById('stylesContainer');
+
+            container.innerHTML = STYLES.map(style => `
+                <div onclick="selectStyleForGrade1_3('${style.id}')" id="style-${style.id}"
+                     class="style-card flex flex-col items-center p-2
+                            bg-white rounded-xl cursor-pointer transition duration-200
+                            shadow-lg hover:shadow-xl border-4 border-transparent
+                            w-32 h-44 md:w-40 md:h-52 overflow-hidden
+                            ${selectedStylePrompt === style.prompt ? 'border-red-500 bg-red-50' : 'hover:border-indigo-500'}">
+                    <div class="w-full aspect-square overflow-hidden rounded-lg mb-2">
+                        <!-- 範例圖片 -->
+                        <img src="${style.sampleUrl}"
+                             onerror="this.src='https://placehold.co/160x160/ccc/333?text=無範例圖';"
+                             alt="${style.name} 範例圖"
+                             class="w-full h-full object-cover transform transition duration-300 hover:scale-105"
+                        >
+                    </div>
+                    <span class="text-sm font-bold text-center text-gray-700">${style.name}</span>
+                </div>
+            `).join('');
+        };
+
+        /**
+         * 選擇風格並切換到相機畫面 (僅用於 1-3 年級)
+         * @param {string} styleId - 選定的風格 ID
+         */
+        window.selectStyleForGrade1_3 = (styleId) => {
+            const style = STYLES.find(s => s.id === styleId);
+            selectedStylePrompt = style ? style.prompt : STYLES[0].prompt; // 確保有預設值
+
+            // 視覺上標記選中的風格
+            document.querySelectorAll('.style-card').forEach(item => {
+                item.classList.remove('border-red-500', 'bg-red-50');
+                item.classList.add('hover:border-indigo-500');
+            });
+            event.currentTarget.classList.add('border-red-500', 'bg-red-50');
+
+            // 延遲切換到相機畫面
+            setTimeout(() => {
+                startCamera();
+                showView('cameraView');
+            }, 300);
+        };
+
+        // ----------------------------------------------------------------------
+        // 4. 相機操作 (Camera Operations)
+        // ----------------------------------------------------------------------
+
+        /**
+         * 啟動網路攝影機
+         */
+        async function startCamera() {
+            const video = document.getElementById('webcamVideo');
+            const loading = document.getElementById('loadingCamera');
+            const captureBtn = document.getElementById('captureBtn');
+
+            captureBtn.disabled = true;
+            loading.classList.remove('hidden');
+
+            try {
+                // 嘗試取得前置攝影機 (user)，若失敗則取得後置/預設 (environment)
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "user" },
+                    audio: false
+                });
+                video.srcObject = cameraStream;
+                await video.play();
+
+                captureBtn.disabled = false;
+                loading.classList.add('hidden');
+            } catch (err) {
+                console.error("無法存取相機:", err);
+                loading.innerHTML = '無法存取相機，請檢查權限。';
+            }
+        }
+
+        /**
+         * 停止網路攝影機
+         */
+        window.stopCamera = ( ) => {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+                const video = document.getElementById('webcamVideo');
+                video.srcObject = null;
+            }
+        };
+
+        // ----------------------------------------------------------------------
+        // 5. 圖像處理與合成 (Image Processing and Synthesis - Using Nano Banana)
+        // ----------------------------------------------------------------------
+
+        /**
+         * 轉換 Data URL 為純 Base64 字串
+         */
+        function dataUrlToPureBase64(dataUrl) {
+            return dataUrl.split(',')[1];
+        }
+
+        /**
+         * 載入外部 URL 圖片並回傳 Base64 字串 (修正 'Failed to fetch' 錯誤)
+         * 新方法：使用 Image 元素和 Canvas 繞過 fetch 限制，並設定 crossOrigin 解決 Tainted Canvas 問題
+         * @param {string} url - 圖片的 lh3.googleusercontent.com URL
+         */
+        async function loadUrlAsBase64(url) {
+            const img = new Image();
+            // 關鍵：設置 crossOrigin 屬性以允許在 Canvas 上讀取圖像資料，避免 Tainted Canvas 錯誤
+            img.crossOrigin = 'Anonymous'; 
+
+            for (let attempt = 0; attempt < 3; attempt++) {
+                try {
+                    const base64Data = await new Promise((resolve, reject) => {
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = img.naturalWidth;
+                            canvas.height = img.naturalHeight;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0);
+                            
+                            try {
+                                const dataUrl = canvas.toDataURL('image/png');
+                                // 成功後，移除 Data URL 前綴
+                                resolve(dataUrlToPureBase64(dataUrl));
+                            } catch (e) {
+                                // 如果 canvas 仍然被標記為 tainted (例如，圖片未設為公開分享)，這會捕獲錯誤
+                                // 這裡假設圖片已經正確設置為公開分享
+                                reject(new Error(`Failed to export canvas data. Please ensure the image is publicly accessible and supports CORS. Original error: ${e.message}`));
+                            }
+                        };
+                        
+                        img.onerror = (e) => {
+                            // 圖片載入失敗 (e.g. 404, network error, or Google blocking direct image access)
+                            reject(new Error(`圖片載入失敗 (Image onerror event). URL: ${url}`));
+                        };
+
+                        // 使用 lh3.googleusercontent.com 的 URL 載入圖片
+                        img.src = url;
+                    });
+                    
+                    return base64Data; // 成功回傳 Base64
+                } catch (error) {
+                    if (attempt === 2) {
+                        console.error(`Attempt ${attempt + 1} to load image failed (final):`, url, error);
+                        throw new Error(`Failed to load background image after 3 attempts. ${error.message}`);
+                    }
+                    console.warn(`Attempt ${attempt + 1} to load image failed. Retrying in ${Math.pow(2, attempt) * 1000}ms.`, url, error);
+                    await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 1000));
+                }
+            }
+        }
+
+
+        /**
+         * 使用 gemini-2.5-flash-image-preview (Nano Banana) 進行圖像處理與合成
+         */
+        async function generateImageWithNanoBanana(capturedBase64, backgroundBase64) {
+            const apiKey = ""; // Canvas 執行時會自動提供，外部託管需手動填寫
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+            const synthesisCanvas = document.getElementById('synthesisCanvas');
+            const loading = document.getElementById('loadingSynthesis');
+            const downloadLink = document.getElementById('downloadLink');
+
+            // 基礎提示詞：要求模型將人物去背、轉換風格後，疊加到背景圖上
+            const basePrompt = "Convert the person in the first image (captured via webcam) into [STYLE_PROMPT_HERE]. Remove the background of the resulting figure. The rendered figure MUST be a half-body shot (from the waist up), scaled to occupy approximately 1/4 of the overall canvas area, and placed near the bottom or side of the composite image. Ensure the figure maintains naturally slim body proportions, avoiding any appearance of excessive muscle mass or bulkiness. Combine the processed figure with the second image (the background scene) to create a single composite photo.";
+
+            const fullPrompt = basePrompt.replace('[STYLE_PROMPT_HERE]', selectedStylePrompt);
+
+            console.log("Using Synthesis Prompt:", fullPrompt);
+
+            const payload = {
+                contents: [{
+                    role: "user",
+                    parts: [
+                        { text: fullPrompt },
+                        { inlineData: { mimeType: "image/png", data: capturedBase64 } },
+                        { inlineData: { mimeType: "image/jpeg", data: backgroundBase64 } }
+                    ]
+                }],
+                generationConfig: {
+                    responseModalities: ['TEXT', 'IMAGE']
+                }
+            };
+
+            downloadLink.classList.remove('pointer-events-none', 'opacity-50');
+
+            for (let attempt = 0; attempt < 3; attempt++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errorBody = await response.text();
+                        console.error(`API attempt ${attempt + 1} failed with status ${response.status}:`, errorBody);
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+                    if (!base64Data) {
+                        console.error("API response missing image data:", result);
+                        throw new Error("Failed to receive image data from API.");
+                    }
+
+                    const imageUrl = `data:image/png;base64,${base64Data}`;
+                    
+                    // 使用 new Image() 來載入 Base64 Data URL
+                    const generatedImg = await new Promise((resolve, reject) => {
+                        const img = new Image();
+                        img.onload = () => resolve(img);
+                        img.onerror = () => reject(new Error("Generated image failed to load."));
+                        img.src = imageUrl;
+                    });
+
+
+                    const ctx = synthesisCanvas.getContext('2d');
+                    synthesisCanvas.width = generatedImg.width;
+                    synthesisCanvas.height = generatedImg.height;
+                    ctx.drawImage(generatedImg, 0, 0);
+
+                    loading.classList.add('hidden');
+                    synthesisCanvas.classList.remove('hidden');
+                    downloadLink.href = imageUrl;
+
+                    // 1-3 年級顯示寄信表單，4-6 年級隱藏
+                    if (window.currentGrade === '1-3') {
+                        document.getElementById('emailFormContainer').classList.remove('hidden');
+                    } else {
+                        document.getElementById('emailFormContainer').classList.add('hidden');
+                    }
+
+                    return; // 成功
+                } catch (error) {
+                    console.error(`Attempt ${attempt + 1} failed:`, error);
+                    if (attempt < 2) {
+                        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+                    } else {
+                        loading.classList.add('hidden');
+                        synthesisCanvas.classList.remove('hidden');
+                        const ctx = synthesisCanvas.getContext('2d');
+                        synthesisCanvas.width = 800;
+                        synthesisCanvas.height = 450;
+                        ctx.fillStyle = '#fef2f2';
+                        ctx.fillRect(0, 0, 800, 450);
+                        ctx.fillStyle = '#b91c1c';
+                        ctx.font = '20px Inter, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('合成失敗：無法連接至 Nano Banana 模型或處理請求。', 400, 225);
+
+                        document.getElementById('emailFormContainer').classList.add('hidden');
+                        downloadLink.href = '#';
+                        downloadLink.classList.add('pointer-events-none', 'opacity-50');
+
+                        return;
+                    }
+                }
+            }
+        }
+
+        /**
+         * 拍照並進行合成
+         */
+        window.captureAndSynthesize = async () => {
+            const video = document.getElementById('webcamVideo');
+            const photoCanvas = document.getElementById('photoCanvas');
+
+            if (video.readyState !== 4) return;
+            if (!selectedStylePrompt || !selectedSceneUrl) {
+                console.error('請先選擇場景和風格！');
+                return;
+            }
+
+            // 1. 拍攝照片 (Video to Canvas)
+            const videoWidth = video.videoWidth;
+            const videoHeight = video.videoHeight;
+            const targetSize = 300;
+            photoCanvas.width = targetSize;
+            photoCanvas.height = targetSize;
+
+            const photoCtx = photoCanvas.getContext('2d');
+            photoCtx.drawImage(video, 0, 0, videoWidth, videoHeight, 0, 0, targetSize, targetSize);
+
+            const capturedDataUrl = photoCanvas.toDataURL('image/png');
+
+            // 顯示合成載入中
+            showView('resultView');
+            document.getElementById('synthesisCanvas').classList.add('hidden');
+            document.getElementById('loadingSynthesis').classList.remove('hidden');
+            document.getElementById('emailFormContainer').classList.add('hidden');
+
+            window.stopCamera(); // 停止相機
+
+            try {
+                // 2. 載入背景圖的 Base64 數據 (使用 Image + Canvas 邏輯)
+                const backgroundBase64 = await loadUrlAsBase64(selectedSceneUrl);
+                const capturedBase64 = dataUrlToPureBase64(capturedDataUrl);
+
+                // 3. 呼叫 Nano Banana API 進行合成
+                await generateImageWithNanoBanana(capturedBase64, backgroundBase64);
+            } catch(e) {
+                console.error("載入圖片或 API 呼叫準備失敗:", e);
+                const synthesisCanvas = document.getElementById('synthesisCanvas');
+                const loading = document.getElementById('loadingSynthesis');
+                const downloadLink = document.getElementById('downloadLink');
+
+                loading.classList.add('hidden');
+                synthesisCanvas.classList.remove('hidden');
+                const ctx = synthesisCanvas.getContext('2d');
+                synthesisCanvas.width = 800;
+                synthesisCanvas.height = 450;
+                ctx.fillStyle = '#fef2f2';
+                ctx.fillRect(0, 0, 800, 450);
+                ctx.fillStyle = '#b91c1c';
+                ctx.font = '20px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`合成準備失敗：無法載入背景或相機圖片。錯誤: ${e.message}`, 400, 225);
+                downloadLink.href = '#';
+                downloadLink.classList.add('pointer-events-none', 'opacity-50');
+            }
+        };
+
+        /**
+         * 呼叫 GAS Web App 進行電子郵件寄送與雲端硬碟備份 (僅適用於 1-3 年級)
+         */
+        window.sendEmail = async () => {
+            const input = document.getElementById('emailAccountInput');
+            const message = document.getElementById('emailMessage');
+            const sendBtn = document.getElementById('sendEmailBtn');
+            const synthesisCanvas = document.getElementById('synthesisCanvas');
+
+            const account = input.value.trim();
+            const fullEmail = account + "@chc.edu.tw";
+
+            message.classList.add('hidden');
+            message.classList.remove('text-green-600', 'text-red-600');
+
+            if (account.length < 3 || account.includes('@') || account.includes(' ')) {
+                message.textContent = '❌ 請輸入有效的帳號 (不含 @chc.edu.tw)';
+                message.classList.add('text-red-600');
+                message.classList.remove('hidden');
+                return;
+            }
+
+            if (!GAS_WEB_APP_URL.includes('google.com')) {
+                message.textContent = '⚠️ 請先將 GAS_WEB_APP_URL 替換為您部署的真實 GAS 網址！';
+                message.classList.add('text-red-600');
+                message.classList.remove('hidden');
+                return;
+            }
+
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>正在寄送與備份...</span>';
+            lucide.createIcons();
+
+            try {
+                // 取得合成圖片的 Base64 數據
+                const imageBase64 = dataUrlToPureBase64(synthesisCanvas.toDataURL('image/png'));
+                
+                const response = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'cors', // 啟用 CORS
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        emailAccount: account,
+                        imageBase64: imageBase64
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP 錯誤: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    message.textContent = `✅ 成功！照片已寄送到 ${result.data.email} 並備份至雲端硬碟。`;
+                    message.classList.add('text-green-600');
+                } else {
+                    message.textContent = `❌ 錯誤：寄信/備份失敗。${result.message || '請檢查 GAS 腳本日誌。'}`;
+                    message.classList.add('text-red-600');
+                }
+
+            } catch (error) {
+                console.error("寄信/備份連線錯誤:", error);
+                message.textContent = `❌ 連線錯誤：無法呼叫 GAS 服務。錯誤訊息：${error.message}`;
+                message.classList.add('text-red-600');
+            } finally {
+                message.classList.remove('hidden');
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<i data-lucide="mail" class="w-5 h-5"></i> <span>再次寄送</span>';
+                lucide.createIcons();
+            }
+        };
+
+        // ----------------------------------------------------------------------
+        // 6. 應用程式初始化 (Initialization)
+        // ----------------------------------------------------------------------
+        window.onload = () => {
+            showView('menuView');
+        };
+
+    </script>
+</body>
+</html>

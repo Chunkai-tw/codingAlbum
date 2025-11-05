@@ -689,7 +689,7 @@
          * 使用 gemini-2.5-flash-image-preview (Nano Banana) 進行圖像處理與合成
          */
         async function generateImageWithNanoBanana(capturedBase64, backgroundBase64) {
-            const apiKey = ""; // Canvas 執行時會自動提供，外部託管需手動填寫
+            const apiKey = "AIzaSyBfxQHpr06zOXmk_BMbzz4ZuA3RtUZga6E"; // Canvas 執行時會自動提供，外部託管需手動填寫
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
             const synthesisCanvas = document.getElementById('synthesisCanvas');
             const loading = document.getElementById('loadingSynthesis');
